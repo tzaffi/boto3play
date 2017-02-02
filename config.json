@@ -2,5 +2,8 @@
 	"content": "C:/websites/www_tcrecord_org/Html",
 	"content_ext": "htm",
 	"encoded": "D:/aws/tcr_encoded_html",
-	"encoded_ext": "txt"
+	"encoded_ext": "txt",
+	"encoded_linebreak": " ",
+	"s3_bucket": "edlab-search-index",
+	"s3_folder": "tcr"
 }
