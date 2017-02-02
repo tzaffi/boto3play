@@ -3,6 +3,7 @@ import os
 import ntpath
 import datetime as dt
 import pprint
+import boto3
 
 def get_config():
 	'''
@@ -52,9 +53,31 @@ def get_encoding_filemap(config, files):
 	
 def encode_files(config, filesmap):
 	'''
-	Save each file with line breaks replaced by spaces
+	Save each file with line breaks replaced by spaces (or rather
+	the value of config['encoded_linebreak'])
 	'''
-	pass
+	br_out= config['encoded_linebreak']
+	num_encodings = 0
+	for ifname, ofname in filesmap.items():
+		with open(ifname) as ifile, open(ofname, 'w') as ofile:
+			ofile.write(ifile.read().replace('\n',br_out).replace('\r',''))
+			num_encodings += 1
+	return num_encodings
+
+def upload_files(config, filesmap):
+	'''
+	Upload the destination values of filesmap to S3.
+	'''
+	s3 = boto3.resource('s3')
+	bucket = config['s3_bucket']
+	s3_bucket = s3.Bucket(bucket)
+	folder = config['s3_folder']
+	for file in filesmap.values():
+		key = "/".join([folder, ntpath.split(file)[-1]])
+		print("Will upload %s --> %s / %s" % (file, bucket, key))
+		with open(file, 'rb') as data:
+			s3_bucket.put_object(Key=key, Body=data)
+		
 	
 if __name__ == '__main__':
 	pp = pprint.PrettyPrinter(indent=4)
@@ -70,8 +93,7 @@ if __name__ == '__main__':
 	print("\nfile encoding map:")
 	pp.pprint(encoding_filemap)
 	
-#    try:
-#        auto.run()
-#    except KeyboardInterrupt:
-#        # We're done. Bail out without dumping a traceback.
-#        sys.exit(0)
+	success_count = encode_files(config, encoding_filemap)
+	print("\nSuccessfully encoded %d files" % success_count)
+	
+	upload_files(config, encoding_filemap)
