@@ -1,3 +1,18 @@
+'''
+usage: listBuckets.py [-h] [--bucket BUCKET]
+
+optional arguments:
+  -h, --help       show this help message and exit
+  --bucket BUCKET  provide a bucket name
+
+EG: to analyze the storage inside the S3 bucket 'edlab-glacier-test' run:
+python3 listbuckets.py --bucket edlab-glacier-test 
+
+EG: to analyze the storage inside all the S3 buckets of the configured AWS account run:
+python3 listbuckets.py
+'''
+
+
 import sys
 import argparse
 import timeit
