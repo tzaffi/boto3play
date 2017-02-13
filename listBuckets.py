@@ -25,18 +25,24 @@ import pprint
 import boto3
 from functools import reduce
 
-def getBuckets():
-    s3 = boto3.resource('s3')
+def getBuckets(creds=None):
+    if creds == None:
+        s3 = boto3.resource("s3")
+    else:
+        s3 = boto3.session.Session(region_name="us-east-1",
+                                   aws_access_key_id=creds[0],
+                                   aws_secret_access_key=creds[1]
+        ).resource("s3")                                   
     return {x.name:x for x in s3.buckets.all()}
 
-def getBucketObjects(bucket_name):
-    buckets = getBuckets()
+def getBucketObjects(bucket_name, creds=None):
+    buckets = getBuckets(creds=creds)
     bucket = buckets[bucket_name]
     return {key.key: key for key in bucket.objects.all()}
 
-def getBucketStats(bucket_name):
+def getBucketStats(bucket_name, creds=None):
     start_time = timeit.default_timer()
-    objs = getBucketObjects(bucket_name)
+    objs = getBucketObjects(bucket_name, creds=creds)
     print("getting stats for s3://%s" % bucket_name)
     stats = { 'count': 0,
               'size_bytes': 0,
@@ -53,30 +59,38 @@ def getBucketStats(bucket_name):
     result = reduce(agg, objs.keys(), stats)
     result['elapsed_time'] = timeit.default_timer() - start_time
     pp = pprint.PrettyPrinter(indent=4)
-    print("finished:")    
+    print("finished:")
     pp.pprint(result)    
     return result
 
 if __name__ == '__main__':
-    pp = pprint.PrettyPrinter(indent=4)
-    buckets = getBuckets()
-    print("buckets are:")
-    pp.pprint(buckets)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--bucket",
                         required=False,
                         type=str,
                         help="provide a bucket name")
+    parser.add_argument("--creds",
+                        required=False,
+                        type=str,
+                        help="provide the AWS access key ID and secret access key separated by a comma")
     args = parser.parse_args()
+
+    creds = None
+    if args.creds:
+        creds = args.creds.split(",")
+
+    pp = pprint.PrettyPrinter(indent=4)
+    buckets = getBuckets(creds=creds)
+    print("buckets are:")
+    pp.pprint(buckets)
 
     bucketsForConsideration = [x for x in buckets]
     if args.bucket:
         bucketsForConsideration = [args.bucket]
-
+    
     print("\n\nComputing statistics for the following buckets:")
     pp.pprint(bucketsForConsideration)
 
-    stats = {x:getBucketStats(x) for x in bucketsForConsideration}
+    stats = {x:getBucketStats(x,creds=creds) for x in bucketsForConsideration}
     print("\n\nFinal statistics:")
     pp.pprint(stats)
