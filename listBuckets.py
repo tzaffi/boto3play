@@ -19,7 +19,8 @@ import timeit
 #import json
 #import os
 #import ntpath
-#import datetime as dt
+import datetime as dt
+import pytz
 import pprint
 import boto3
 from functools import reduce
@@ -38,11 +39,16 @@ def getBucketStats(bucket_name):
     objs = getBucketObjects(bucket_name)
     print("getting stats for s3://%s" % bucket_name)
     stats = { 'count': 0,
-              'size_bytes': 0
+              'size_bytes': 0,
+              'last_modified': pytz.UTC.localize(dt.datetime.min),
+              'last_modified_object': None,
     }
     def agg(x_stats, y_key):
+        is_newest_seen = (x_stats['last_modified'] < objs[y_key].last_modified) 
         return {'count': x_stats['count'] + 1,
-                'size_bytes': x_stats['size_bytes'] + objs[y_key].size
+                'size_bytes': x_stats['size_bytes'] + objs[y_key].size,
+                'last_modified': (x_stats['last_modified'] if not is_newest_seen else objs[y_key].last_modified ),
+                'last_modified_object':  (x_stats['last_modified_object'] if not is_newest_seen else y_key)
                 }
     result = reduce(agg, objs.keys(), stats)
     result['elapsed_time'] = timeit.default_timer() - start_time
