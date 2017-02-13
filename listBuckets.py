@@ -36,6 +36,7 @@ def getBucketObjects(bucket_name):
 def getBucketStats(bucket_name):
     start_time = timeit.default_timer()
     objs = getBucketObjects(bucket_name)
+    print("getting stats for s3://%s" % bucket_name)
     stats = { 'count': 0,
               'size_bytes': 0
     }
@@ -45,6 +46,9 @@ def getBucketStats(bucket_name):
                 }
     result = reduce(agg, objs.keys(), stats)
     result['elapsed_time'] = timeit.default_timer() - start_time
+    pp = pprint.PrettyPrinter(indent=4)
+    print("finished:")    
+    pp.pprint(result)    
     return result
 
 if __name__ == '__main__':
